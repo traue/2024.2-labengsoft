@@ -1,0 +1,29 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "jacobw/fedora35-arm64"
+  config.vm.network "private_network", ip: "192.168.33.10"
+  config.vm.network "public_network"
+  config.vm.provider "vmware" do |vm|
+    vm.gui = true
+    vm.memory = "1024"
+    vm.allowlist_verified = true
+  end
+  config.vm.provision "shell", inline: <<-SHELL
+    mv /etc/yum.repos.d/fedora-updates.repo /tmp/
+    mv /etc/yum.repos.d/fedora-updates-modular.repo /tmp/
+    yum clean all
+    yum update 
+
+    sudo systemctl stop firewalld
+    sudo systemctl disable firewalld
+
+    yum install httpd wget unzip -y
+    sudo systemctl enable httpd
+    sudo systemctl start httpd
+
+    cd /tmp/
+    wget https://github.com/traue/2024.1-labengsoft/raw/main/vagrant-lab/labeng_site.zip
+    unzip -o labeng_site.zip
+    cp -r labeng_site/* /var/www/html/
+    sudo systemctl restart httpd
+  SHELL
+end
